@@ -69,8 +69,6 @@ void loop() {
     if (FR_en < 0) FR_en = Pulses - 1;
   }
 
-  FR_x = 1;
-  FR_y = 0;
 
   if (currentMillis - previousMillis >= interval) {  //実行する量を少なくするために今の時間見て色々やってるところ
     previousMillis = currentMillis;                  // 時刻を更新
@@ -113,8 +111,8 @@ void loop() {
 
 
 void updateLedAndSerial() {
-
-  Serial.println(FR_en);
+  
+  // Serial.println(FR_en);
 }
 
 
@@ -137,9 +135,11 @@ void Swerve_control(int encode, int mo_u, int mo_d, double tx, double ty, int Um
   //三平方の定理を使って移動する出力を計算
   tv = std::sqrt(tx * tx + ty * ty);
 
+  Serial.print(encode);
+  Serial.print(",");
   Serial.println(objective_angle_encode);
-  Serial.println(tx);
-  Serial.println(ty);
+  // Serial.println(tx);
+  // Serial.println(ty);
 
 
 
@@ -255,8 +255,8 @@ void Swerve_control(int encode, int mo_u, int mo_d, double tx, double ty, int Um
   //   D_mo_pwm = 255;
   // }
 
-  Serial.print("rv = ");
-  Serial.println(rv);
+  // Serial.print("rv = ");
+  // Serial.println(rv);
 
 
   if (Bsw == 1) {
@@ -278,9 +278,9 @@ void Swerve_control(int encode, int mo_u, int mo_d, double tx, double ty, int Um
     D_mo_pwm = 255;
   }
 
-  Serial.print("モーターの出力(U,D)\n");
-  Serial.println(U_mo_pwm);
-  Serial.println(D_mo_pwm);
+  // Serial.print("モーターの出力(U,D)\n");
+  // Serial.println(U_mo_pwm);
+  // Serial.println(D_mo_pwm);
 
 
   if (U_mo_pwm < 0) {
@@ -300,8 +300,8 @@ void Swerve_control(int encode, int mo_u, int mo_d, double tx, double ty, int Um
   analogWrite(Umo_pin, U_mo_pwm);
   analogWrite(Dmo_pin, D_mo_pwm);
 
-  Serial.println(U_mo_pwm);
-  Serial.println(D_mo_pwm);
+  // Serial.println(U_mo_pwm);
+  // Serial.println(D_mo_pwm);
 
 
 

@@ -23,6 +23,8 @@ const int interval = 2;          //~ms秒周期で出力を変化させる
 
 int swerve_time = 0;
 
+double rv_i = 0.0;
+
 void Swerve_control(int encode, int mo_u, int mo_d, double tx, double ty, int Umo_pin, int Dmo_pin, int Umo_re, int Dmo_re);
 void updateLedAndSerial();
 
@@ -45,6 +47,11 @@ void setup() {
   pinMode(FRD_re, OUTPUT);
 
   delay(3000);
+
+  analogWrite(swFRU,100);
+  delay(1000);
+  analogWrite(swFRD,100);
+  delay(1000);
 }
 
 void loop() {
@@ -79,7 +86,7 @@ void loop() {
       FR_y = 0;
     } else if (swerve_time >= 2000 && swerve_time < 4000) {
       FR_x = 0;
-      FR_y = 0.5;
+      FR_y = 1;
     } else if (swerve_time >= 4000 && swerve_time < 6000) {
       FR_x = -1;
       FR_y = 0;
@@ -94,9 +101,13 @@ void loop() {
       FR_y = 0;
     } else if (swerve_time >= 12000 && swerve_time < 14000) {
       FR_x = 0.9;
-      FR_y = 0.05;
+      FR_y = 0.2;
     } else if (swerve_time >= 14000) {
       swerve_time = 0;
+    }
+
+    if(0 == swerve_time % 2000){
+      rv_i = 0;
     }
 
     updateLedAndSerial();
@@ -121,7 +132,7 @@ void Swerve_control(int encode, int mo_u, int mo_d, double tx, double ty, int Um
 
   int objective_angle_encode = 0;  //目標角度(エンコーダの値)
 
-  int rv = 0;       //どのくらい回転すればいいかを入れる変数(-24 ~ 24)
+  double rv = 0.0;       //どのくらい回転すればいいかを入れる変数(-24 ~ 24)
   double tv = 0.0;  //どのくらいの出力で回すべきか入れるところ。
   int Bsw = 0;      //後ろ方向にステアを回転するとき1にするやつ
   int U_mo_pwm = 0, D_mo_pwm = 0;
@@ -134,12 +145,6 @@ void Swerve_control(int encode, int mo_u, int mo_d, double tx, double ty, int Um
 
   //三平方の定理を使って移動する出力を計算
   tv = std::sqrt(tx * tx + ty * ty);
-
-  Serial.print(encode);
-  Serial.print(",");
-  Serial.println(objective_angle_encode);
-  // Serial.println(tx);
-  // Serial.println(ty);
 
 
 
@@ -195,6 +200,14 @@ void Swerve_control(int encode, int mo_u, int mo_d, double tx, double ty, int Um
     Bsw = 0;
   }
 
+  rv_i += rv * 0.05;
+
+  if(objective_angle_encode == encode || objective_angle_encode % 48 == encode %48){
+    rv_i = 0;
+  }
+
+
+
   //更に新しい計算方法
   /*
   rv = ((objective_angle_encode - encode + Pulses) % Pulses);
@@ -221,15 +234,17 @@ void Swerve_control(int encode, int mo_u, int mo_d, double tx, double ty, int Um
   // }
 
   //(要調整)旋回と移動のモーター出力の割合を、目標角度と現在の角度で変更している
-  if (rv > 6 || rv < -6) {
+  if (rv > 4 || rv < -4) {
     steering_rate = 255;
   } else if (rv > 1) {
-    steering_rate = (200 / 6) * rv;
+    steering_rate = (50 / 4) * rv;
   } else if (rv < -1) {
-    steering_rate = (200 / 6) * -rv;
+    steering_rate = (50 / 4) * -rv;
   } else {
-    steering_rate = 20;
+    steering_rate = 10;
   }
+
+
 
 
   //反転したとき、旋回の出力を上と下逆にしなきゃいけないので(多分、あんまり考えてない、何となく)
@@ -258,14 +273,26 @@ void Swerve_control(int encode, int mo_u, int mo_d, double tx, double ty, int Um
   // Serial.print("rv = ");
   // Serial.println(rv);
 
-
   if (Bsw == 1) {
-    U_mo_pwm = (255 - steering_rate) * tv + (steering_rate / 255.0) * rv * 255 / (double)24;
-    D_mo_pwm = -(255 - steering_rate) * tv + (steering_rate / 255.0) * rv * 255 / (double)24;
+    U_mo_pwm = (255 - steering_rate) * tv + (steering_rate / 255.0) * (rv + rv_i) * 255 / (double)24;
+    D_mo_pwm = -(255 - steering_rate) * tv + (steering_rate / 255.0) * (rv + rv_i) * 255 / (double)24;
   } else {
-    U_mo_pwm = -(255 - steering_rate) * tv + (steering_rate / 255.0) * rv * 255 / (double)24;
-    D_mo_pwm = (255 - steering_rate) * tv + (steering_rate / 255.0) * rv * 255 / (double)24;
+    U_mo_pwm = -(255 - steering_rate) * tv + (steering_rate / 255.0) * (rv + rv_i) * 255 / (double)24;
+    D_mo_pwm = (255 - steering_rate) * tv + (steering_rate / 255.0) * (rv + rv_i) * 255 / (double)24;
   }
+
+
+  // if(U_mo_pwm > mo_u){
+  //   U_mo_pwm = mo_u + 2;
+  // }else if(U_mo_pwm < mo_u){
+  //   U_mo_pwm = mo_u - 2;
+  // }
+
+  // if(D_mo_pwm > mo_d){
+  //   D_mo_pwm = mo_d + 2;
+  // }else if(D_mo_pwm < mo_d){
+  //   D_mo_pwm = mo_d - 2;
+  // }
 
   if (U_mo_pwm < -255) {
     U_mo_pwm = -255;
@@ -302,7 +329,17 @@ void Swerve_control(int encode, int mo_u, int mo_d, double tx, double ty, int Um
 
   // Serial.println(U_mo_pwm);
   // Serial.println(D_mo_pwm);
-
+  Serial.print(rv + rv_i);
+  Serial.print(",");
+  Serial.print(rv);
+  Serial.print(",");
+  Serial.print(rv_i);
+  Serial.print(",");
+  Serial.print(encode);
+  Serial.print(",");
+  Serial.println(objective_angle_encode);
+  // Serial.println(tx);
+  // Serial.println(ty);
 
 
   FRU_mo = U_mo_pwm;

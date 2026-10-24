@@ -100,8 +100,8 @@ void loop() {
       FR_x = 1;
       FR_y = 0;
     } else if (swerve_time >= 12000 && swerve_time < 14000) {
-      FR_x = 0.9;
-      FR_y = 0.2;
+      FR_x = (swerve_time - 12000)/2000.0;
+      FR_y = 1 - (swerve_time - 12000)/2000.0;
     } else if (swerve_time >= 14000) {
       swerve_time = 0;
     }
@@ -200,7 +200,7 @@ void Swerve_control(int encode, int mo_u, int mo_d, double tx, double ty, int Um
     Bsw = 0;
   }
 
-  rv_i += rv * 0.05;
+  rv_i += rv * 0.1;
 
   if(objective_angle_encode == encode || objective_angle_encode % 48 == encode %48){
     rv_i = 0;
